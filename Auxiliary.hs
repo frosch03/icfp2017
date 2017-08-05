@@ -23,7 +23,8 @@ rightcase s
     where
       s0 = pack s
       s1 = replace (pack "move\"") (pack "Move\"") s0
-      s2 = replace (pack "claim")  (pack "Claim")  s1
-      s3 = replace (pack "pass")   (pack "Pass")   s2
-      s' = unpack s3
+      s2 = replace (pack "stop\"") (pack "Stop\"") s1
+      s3 = replace (pack "claim")  (pack "Claim")  s2
+      s4 = replace (pack "pass")   (pack "Pass")   s3
+      s' = unpack s4
       
