@@ -27,33 +27,51 @@ initialize s
       js = decodeJSON $ rightcase s
       rs = rivers . Punter.map $ js
 
-nextAdjacentMove :: GSM (M.SimpleMove) 
-nextAdjacentMove
-    = do s <- get
-         let free = head . unclaimed $ s
-             pid  = punter . setup $ s
-             m    = M.Claim pid (source free) (target free)
-             s'   = s { unclaimed = tail . unclaimed $ s
-                      , remaining = remaining s - 1
-                      }
-         put s'
-         gsmIO $ return m
+isAdjTo :: River -> River -> Bool
+isAdjTo (River s1 t1) (River s2 t2)
+    =   s1 == s2 || s1 == t2
+      || t1 == s2 || t1 == t2
+
+
+isAdjToOneOf :: [River] -> River -> Bool
+isAdjToOneOf rivers river
+    = foldl (\r n -> (isAdjTo river n) || r) False rivers
+
+adjacentRiver :: GameState -> Maybe River
+adjacentRiver s
+    | length goodRs == 0
+    = Nothing
+
+    | otherwise
+    = Just (head goodRs)
+    where
+      freeRs = unclaimed $ s
+      myRs   = myRivers $ s
+      goodRs = [x | x <- freeRs, (isAdjToOneOf myRs) x]
+
+
+aRiver :: GameState -> River
+aRiver = head . unclaimed
 
 
 nextMove :: GSM (M.SimpleMove) 
-nextMove
+nextMove 
     = do s <- get
-         let free = head . unclaimed $ s
+         let next = maybe (aRiver s) Prelude.id (adjacentRiver s)
              pid  = punter . setup $ s
-             m    = M.Claim pid (source free) (target free)
-             s'   = s { unclaimed = tail . unclaimed $ s
-                      , remaining = remaining s - 1
+             m    = M.Claim pid (source next) (target next)
+             s'   = s { unclaimed = [x | x <- unclaimed $ s, x /= next]
+                      , myRivers  = next : (myRivers s)
+                      -- , remaining = remaining s - 1
                       }
          put s'
          gsmIO $ return m
 
 
 eliminateMove :: M.SimpleMove -> GSM (M.SimpleMove)
+eliminateMove m@(M.Pass _)
+    = gsmIO $ return m
+
 eliminateMove m@(M.Claim _ src tgt)
     = do s <- get
          let freeRivers  = unclaimed s
