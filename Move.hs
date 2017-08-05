@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Move
-    ( GamePlay(..)
-    , Move(..)
+    (  Move(..)
     , SimpleMove(..)
     )
 where
@@ -13,15 +12,9 @@ import Data.Char
 
 import qualified Score as S
 import Auxiliary
+import Map (SiteId)
 
 type PunterId = Int
-type SiteId = Int
-
-
-data GamePlay
-    = GamePlay
-      { move :: Move }
-    deriving (Show, Data, Typeable)
 
 
 data Move

@@ -9,7 +9,6 @@ where
 import Text.JSON.Generic
 
 type PunterId = Int
-type SiteId = Int
 
 data Score
     = Score
