@@ -44,28 +44,27 @@ main
                       ++ (show lRs) ++ " Rivers | "
                       ++ (show lMs) ++ " Mines "
          hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
-         putStrLn $ "Your are Punter #" ++ (show p)
+         putStrLn $ "Your are Punter #" ++ (show p) ++ "\n"
+
+         let doOwnMove s =
+               do (m, s) <- runStateT nextMove s
+                  putStrLn $ "   " ++ show m
+                  hPutStr h (pickle . lowcase . encodeJSON $ m)
+                  return s
 
          let loop s = 
                do putStrLn $ (show . remaining $ s) ++ " remaining Moves"
+
                   l <- hGetLine h >>= (\x -> return $ unpickle x)
+                  let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
+                      lastMoves      = M.moves lastServerMove
+                  putStrLn $ show lastServerMove
 
-                  putStrLn $ show $ ((decodeJSON . rightcase $ l) :: M.Move)
-
-                  let lastMoves = M.moves $ ((decodeJSON . rightcase $ l) :: M.Move)
-                  (_, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
+                  (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                   let remainingMoves = remaining s
 
-                  (m, s) <- runStateT nextMove s
-
-                  putStrLn $ "   " ++ show m
-                  hPutStr h (pickle . lowcase . encodeJSON $ m)
-
-                  when (remaining s > 0) (loop s)
+                  
+                  when (not(M.isStopped lastServerMove)) (doOwnMove s >>= (\x -> loop x))
          loop s
-
-         l <- hGetLine h >>= (\x -> return $ unpickle x)
-         putStrLn $ show ((decodeJSON . rightcase $ l) :: M.Move)
-
          return ()
