@@ -19,8 +19,8 @@ import Game
 
 
 serverAddress = "punter.inf.ed.ac.uk"
-serverPort    = 9006
-
+serverPort    = 9019
+                
 player = Name "frosch03"
 
 main :: IO ()
@@ -43,20 +43,19 @@ main
                       ++ (show lSs) ++ " Sites | "
                       ++ (show lRs) ++ " Rivers | "
                       ++ (show lMs) ++ " Mines "
-         putStrLn $ "Your are Punter #" ++ (show p)
-
          hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
+         putStrLn $ "Your are Punter #" ++ (show p)
 
          let loop s = 
                do putStrLn $ (show . remaining $ s) ++ " remaining Moves"
                   l <- hGetLine h >>= (\x -> return $ unpickle x)
 
                   putStrLn $ show $ ((decodeJSON . rightcase $ l) :: M.Move)
-                  let lastMove = head . M.moves $ ((decodeJSON . rightcase $ l) :: M.Move)
-                  (_, s) <- runStateT (eliminateMove lastMove) s
+
+                  let lastMoves = M.moves $ ((decodeJSON . rightcase $ l) :: M.Move)
+                  (_, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                   let remainingMoves = remaining s
-                  putStrLn $ (show remainingMoves) ++ " remaining Moves"
 
                   (m, s) <- runStateT nextMove s
 
