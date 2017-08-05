@@ -19,13 +19,14 @@ import Game
 
 
 serverAddress = "punter.inf.ed.ac.uk"
-serverPort    = 9019
+serverPort    = 9018
                 
 player = Name "frosch03"
 
 main :: IO ()
 main
-    = do h <- connectTo serverAddress (PortNumber serverPort)
+    = do putStrLn $ "Connecting to: " ++ serverAddress ++ (':' : show serverPort)
+         h <- connectTo serverAddress (PortNumber serverPort)
          hPutStr h (pickle . lowcase . encodeJSON $ player)
          _ <- hGetLine h
 
