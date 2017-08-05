@@ -1,22 +1,39 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Move
-    ( Move(..)
+    ( GamePlay(..)
+    , Move(..)
     , SimpleMove(..)
     )
 where
 
 
 import Text.JSON.Generic
+import Data.Char
+
+import qualified Score as S
+import Auxiliary
 
 type PunterId = Int
 type SiteId = Int
 
 
+data GamePlay
+    = GamePlay
+      { move :: Move }
+    deriving (Show, Data, Typeable)
+
+
 data Move
     = Move
       { moves :: [SimpleMove]
-      } deriving (Show, Data, Typeable)
+      }
+    | Stop
+      { moves :: [SimpleMove]
+      , scores :: [S.Score]
+      }
+    deriving (Show, Data, Typeable)
+
 
 data SimpleMove
     = Claim
@@ -29,5 +46,3 @@ data SimpleMove
       }
     deriving (Show, Data, Typeable)
 
-
-    

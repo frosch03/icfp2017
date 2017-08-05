@@ -3,13 +3,15 @@
 module Punter
 where
 
+-- import Text.Regex.PCRE
+
 import Text.JSON.Generic
 import Control.Monad.State
 import Network
 import System.IO
 
-
 import qualified Move as M
+import Auxiliary 
 
 
 type PunterId = Int
@@ -52,12 +54,11 @@ data GameState
       } deriving (Show, Data, Typeable)
 
 
-
 initialize :: String -> GameState
 initialize s
     = GameState js rs (length rs)
     where
-      js = decodeJSON s
+      js = decodeJSON $ rightcase s
       rs = rivers . Punter.map $ js
 
 
@@ -93,10 +94,6 @@ eliminateMove m@(M.Claim _ src tgt)
       claimedRiver = River src tgt
 
 
-dropLength :: String -> String
-dropLength = tail . dropWhile (\x -> x /= ':')
-
-
 data Name
     = Name
       { me :: String
@@ -114,24 +111,51 @@ pickle s
       s' = s ++ "\n"
       l  = length s'
 
+unpickle :: String -> String
+unpickle = tail . dropWhile (\x -> x /= ':')
+
+
 dropFirstLast :: String -> String
 dropFirstLast = tail . reverse . tail . reverse
 
 main :: IO ()
 main
-    = do h <- connectTo "punter.inf.ed.ac.uk" (PortNumber 9009)
-         hPutStr h (pickle . encodeJSON $ Name "frosch03")
+    = do h <- connectTo "punter.inf.ed.ac.uk" (PortNumber 9007)
+         hPutStr h (pickle . lowcase . encodeJSON $ Name "frosch03")
          _ <- hGetLine h
 
-         l <- hGetLine h >>= (\x -> return $ dropLength x)
+         l <- hGetLine h >>= (\x -> return $ unpickle x)
          putStrLn ("GameState received")
+         putStrLn (show l)
 
          let s = initialize l
              p = punter . setup $ s
 
          putStrLn ("Punter ID:" ++ show p)
-         hPutStr h (pickle . encodeJSON $ Ready p)
-         l <- hGetLine h >>= (\x -> return $ dropLength x)
-         -- (m, s') <- runStateT nextMove s
+         hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
+
+         let loop s = 
+               do putStrLn $ (show . remaining $ s) ++ " remaining Moves"
+                  l <- hGetLine h >>= (\x -> return $ unpickle x)
+                  putStrLn "Opponent moved:"
+                  putStrLn $ show $ ((decodeJSON . rightcase $ l) :: M.Move)
+                  let lastMove = head . M.moves $ ((decodeJSON . rightcase $ l) :: M.Move)
+                  (_, s) <- runStateT (eliminateMove lastMove) s
+
+                  let remainingMoves = remaining s
+                  putStrLn $ (show remainingMoves) ++ " remaining Moves"
+
+                  (m, s) <- runStateT nextMove s
+                  putStrLn "Own move:"
+                  putStrLn $ show m
+                  hPutStr h (pickle . lowcase . encodeJSON $ m)
+                  putStrLn "---loop---"
+                  when (remaining s > 0) (loop s)
+         loop s
+
+         l <- hGetLine h >>= (\x -> return $ unpickle x)
+         putStrLn (show l)
 
          return ()
+
+
