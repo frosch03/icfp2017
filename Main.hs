@@ -3,6 +3,8 @@
 module Main
 where
 
+import Prelude hiding (map)
+
 import Text.JSON.Generic
 import Control.Monad.State
 import Network
@@ -16,26 +18,39 @@ import Protocol
 import Game
 
 
+serverAddress = "punter.inf.ed.ac.uk"
+serverPort    = 9006
+
+player = Name "frosch03"
+
 main :: IO ()
 main
-    = do h <- connectTo "punter.inf.ed.ac.uk" (PortNumber 9007)
-         hPutStr h (pickle . lowcase . encodeJSON $ Name "frosch03")
+    = do h <- connectTo serverAddress (PortNumber serverPort)
+         hPutStr h (pickle . lowcase . encodeJSON $ player)
          _ <- hGetLine h
 
          l <- hGetLine h >>= (\x -> return $ unpickle x)
          putStrLn ("GameState received")
-         putStrLn (show l)
 
-         let s = initialize l
-             p = punter . setup $ s
+         let s   = initialize l
+             p   = punter  . setup $ s
+             n   = punters . setup $ s
+             lSs = length . sites  . map . setup $ s
+             lRs = length . rivers . map . setup $ s
+             lMs = length . mines  . map . setup $ s
 
-         putStrLn ("Punter ID:" ++ show p)
+         putStrLn $      (show n)   ++ " Punters | "
+                      ++ (show lSs) ++ " Sites | "
+                      ++ (show lRs) ++ " Rivers | "
+                      ++ (show lMs) ++ " Mines "
+         putStrLn $ "Your are Punter #" ++ (show p)
+
          hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
 
          let loop s = 
                do putStrLn $ (show . remaining $ s) ++ " remaining Moves"
                   l <- hGetLine h >>= (\x -> return $ unpickle x)
-                  putStrLn "Opponent moved:"
+
                   putStrLn $ show $ ((decodeJSON . rightcase $ l) :: M.Move)
                   let lastMove = head . M.moves $ ((decodeJSON . rightcase $ l) :: M.Move)
                   (_, s) <- runStateT (eliminateMove lastMove) s
@@ -44,16 +59,14 @@ main
                   putStrLn $ (show remainingMoves) ++ " remaining Moves"
 
                   (m, s) <- runStateT nextMove s
-                  putStrLn "Own move:"
-                  putStrLn $ show m
+
+                  putStrLn $ "   " ++ show m
                   hPutStr h (pickle . lowcase . encodeJSON $ m)
-                  putStrLn "---loop---"
+
                   when (remaining s > 0) (loop s)
          loop s
 
          l <- hGetLine h >>= (\x -> return $ unpickle x)
-         putStrLn (show l)
+         putStrLn $ show ((decodeJSON . rightcase $ l) :: M.Move)
 
          return ()
-
-
