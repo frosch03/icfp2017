@@ -30,6 +30,7 @@ data GameState
     = GameState
       { setup :: Setup
       , unclaimed :: [River]
+      , myRivers  :: [River]
       , remaining :: Int
       } deriving (Show, Data, Typeable)
 

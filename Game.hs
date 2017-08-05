@@ -22,10 +22,23 @@ import Punter
 
 initialize :: String -> GameState
 initialize s
-    = GameState js rs (length rs)
+    = GameState js rs [] (length rs)
     where
       js = decodeJSON $ rightcase s
       rs = rivers . Punter.map $ js
+
+nextAdjacentMove :: GSM (M.SimpleMove) 
+nextAdjacentMove
+    = do s <- get
+         let free = head . unclaimed $ s
+             pid  = punter . setup $ s
+             m    = M.Claim pid (source free) (target free)
+             s'   = s { unclaimed = tail . unclaimed $ s
+                      , remaining = remaining s - 1
+                      }
+         put s'
+         gsmIO $ return m
+
 
 nextMove :: GSM (M.SimpleMove) 
 nextMove
