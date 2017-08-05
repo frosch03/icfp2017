@@ -34,13 +34,12 @@ data Move
 
 instance Show Move where
     show (Move sms)
-        = "   [" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]" sms)
+        = "[" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]" sms)
 
     show (Stop sms scs)
-        =    "Game Stopped, Last moves:\n"
-          ++ "   [" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]\n" sms)
-          ++ "Scores: "
-          ++ "(" ++ (foldr (\n r -> (show n) ++ ", " ++ r) ")" scs)
+        =    "Game Stopped\n\n"
+          ++ "Last moves:" ++ "[" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]\n" sms)
+          ++ "Scores:    " ++ "(" ++ (foldr (\n r -> (show n) ++ ", " ++ r) ")" scs)
 
 
 data SimpleMove
