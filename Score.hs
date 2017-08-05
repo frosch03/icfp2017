@@ -14,5 +14,10 @@ data Score
     = Score
       { punter :: PunterId
       , score  :: Int
-      } deriving (Show, Data, Typeable)
+      } deriving (Data, Typeable)
 
+instance Show Score where
+    show (Score p s)
+        = '#':(show p) ++ ": " ++ (show s)
+          
+                    
