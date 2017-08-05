@@ -27,15 +27,33 @@ initialize s
       js = decodeJSON $ rightcase s
       rs = rivers . Punter.map $ js
 
+
+isAdjToSite :: River -> SiteId -> Bool
+isAdjToSite (River s t) sid
+    = s == sid || t == sid
+
 isAdjTo :: River -> River -> Bool
 isAdjTo (River s1 t1) (River s2 t2)
     =   s1 == s2 || s1 == t2
       || t1 == s2 || t1 == t2
 
-
 isAdjToOneOf :: [River] -> River -> Bool
 isAdjToOneOf rivers river
     = foldl (\r n -> (isAdjTo river n) || r) False rivers
+
+
+unclaimedRiverAtMine :: GameState -> Maybe River
+unclaimedRiverAtMine s
+    | length mineRs == 0
+    = Nothing
+
+    | otherwise
+    = Just $ head mineRs
+    where
+      allMines = mines . Punter.map . setup $ s
+      freeRs   = unclaimed s
+      mineRs   = [x | x <- freeRs, foldl (\r n -> r || (isAdjToSite x n)) False allMines]
+                 
 
 adjacentRiver :: GameState -> Maybe River
 adjacentRiver s
@@ -57,12 +75,12 @@ aRiver = head . unclaimed
 nextMove :: GSM (M.SimpleMove) 
 nextMove 
     = do s <- get
-         let next = maybe (aRiver s) Prelude.id (adjacentRiver s)
+         let nextAdj = maybe (aRiver s) Prelude.id (adjacentRiver s)
+             next    = maybe nextAdj    Prelude.id (unclaimedRiverAtMine s)
              pid  = punter . setup $ s
              m    = M.Claim pid (source next) (target next)
              s'   = s { unclaimed = [x | x <- unclaimed $ s, x /= next]
                       , myRivers  = next : (myRivers s)
-                      -- , remaining = remaining s - 1
                       }
          put s'
          gsmIO $ return m
