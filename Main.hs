@@ -9,6 +9,7 @@ import Text.JSON.Generic
 import Control.Monad.State
 import Network
 import System.IO
+import System.Environment
 
 import qualified Move as M
 import Map 
@@ -19,14 +20,16 @@ import Game
 
 
 serverAddress = "punter.inf.ed.ac.uk"
-serverPort    = 9018
-                
 player = Name "frosch03"
 
 main :: IO ()
 main
-    = do putStrLn $ "Connecting to: " ++ serverAddress ++ (':' : show serverPort)
-         h <- connectTo serverAddress (PortNumber serverPort)
+    = do args <- getArgs
+         let port = (read . head $ args) :: PortNumber
+
+         putStrLn $ "Connecting to: " ++ serverAddress ++ (':' : show port) ++ "\n"
+                  
+         h <- connectTo serverAddress (PortNumber port)
          hPutStr h (pickle . lowcase . encodeJSON $ player)
          _ <- hGetLine h
 
