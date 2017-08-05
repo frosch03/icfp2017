@@ -56,7 +56,7 @@ sRead
        
 dWrite :: String -> IO ()
 dWrite s
-    = do hPutStr stderr s
+    = do hPutStrLn stderr s
          hFlush stderr
 
 main :: IO ()
@@ -67,18 +67,10 @@ main
 
          sWrite (pickle . lowcase . encodeJSON $ player)
 
-         x <- sRead
-         dWrite $ show x
+         _ <- sRead
 
-         x <- sRead
-         dWrite $ show x
-
-         return ()
-
-         _ <- hGetLine stdin
-
-         l <- hGetLine stdin >>= (\x -> return $ unpickle x)
-         hPutStrLn stderr ("GameState received")
+         l <- sRead
+         dWrite ("GameState received")
 
          let s   = initialize l
              p   = punter  . setup $ s
@@ -87,26 +79,24 @@ main
              lRs = length . rivers . map . setup $ s
              lMs = length . mines  . map . setup $ s
 
-         hPutStrLn stderr $  (show n)   ++ " Punters | "
-                          ++ (show lSs) ++ " Sites | "
-                          ++ (show lRs) ++ " Rivers | "
-                          ++ (show lMs) ++ " Mines "
-         hPutStr stdout (pickle . lowcase . encodeJSON $ Ready p)
-         hFlush stdout
-         hPutStrLn stderr $ "Your are Punter #" ++ (show p) ++ "\n"
+         dWrite $  (show n) ++ " Punters | "
+                            ++ (show lSs) ++ " Sites | "
+                            ++ (show lRs) ++ " Rivers | "
+                            ++ (show lMs) ++ " Mines "
+         sWrite (pickle . lowcase . encodeJSON $ Ready p)
+         dWrite $ "Your are Punter #" ++ (show p) ++ "\n"
 
          let doOwnMove s =
                do (m, s) <- runStateT nextMove s
-                  hPutStrLn stderr $ "Me:     " ++ show m
-                  hPutStr stdout (pickle . lowcase . encodeJSON $ m)
-                  hFlush stdout
+                  dWrite $ "Me:     " ++ show m
+                  sWrite (pickle . lowcase . encodeJSON $ m)
                   return s
 
          let loop s = 
-               do l <- hGetLine stdin >>= (\x -> return $ unpickle x)
+               do l <- sRead
                   let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
                       lastMoves      = M.moves lastServerMove
-                  hPutStrLn stderr $ "Server: " ++ show lastServerMove
+                  dWrite $ "Server: " ++ show lastServerMove
                   (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                   let remainingMoves = remaining s
