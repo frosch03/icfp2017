@@ -22,19 +22,63 @@ import Game
 serverAddress = "punter.inf.ed.ac.uk"
 player = Name "frosch03"
 
+
+takeWhileM :: Monad m => (a -> Bool) -> [m a] -> m [a]
+takeWhileM p (ma : mas) = do
+    a <- ma
+    if p a
+      then liftM (a :) $ takeWhileM p mas
+      else return []
+takeWhileM _ _ = return []
+                 
+       
+takeCountM :: Monad m => Int -> [m a] -> m [a]
+takeCountM 1 (ma : _)
+    = do a <- ma
+         return [a]
+takeCountM cnt (ma : mas)
+    = do a <- ma
+         liftM (a :) $ takeCountM (cnt - 1) mas
+takeCountM _ _ = return []
+
+
+sWrite :: String -> IO ()
+sWrite s
+    = do hPutStr stdout s
+         hFlush stdout
+
+sRead :: IO String
+sRead
+    = do x <- takeWhileM (/= ':') (repeat getChar)
+         let x' = ((read x) :: Int)
+         x <- takeCountM x' (repeat getChar)
+         return x
+       
+dWrite :: String -> IO ()
+dWrite s
+    = do hPutStr stderr s
+         hFlush stderr
+
 main :: IO ()
 main
-    = do args <- getArgs
-         let port = (read . head $ args) :: PortNumber
+    = do hSetBuffering stdin  NoBuffering
+         hSetBuffering stdout NoBuffering
+         hSetBuffering stderr NoBuffering
 
-         putStrLn $ "Connecting to: " ++ serverAddress ++ (':' : show port) ++ "\n"
-                  
-         h <- connectTo serverAddress (PortNumber port)
-         hPutStr h (pickle . lowcase . encodeJSON $ player)
-         _ <- hGetLine h
+         sWrite (pickle . lowcase . encodeJSON $ player)
 
-         l <- hGetLine h >>= (\x -> return $ unpickle x)
-         putStrLn ("GameState received")
+         x <- sRead
+         dWrite $ show x
+
+         x <- sRead
+         dWrite $ show x
+
+         return ()
+
+         _ <- hGetLine stdin
+
+         l <- hGetLine stdin >>= (\x -> return $ unpickle x)
+         hPutStrLn stderr ("GameState received")
 
          let s   = initialize l
              p   = punter  . setup $ s
@@ -43,24 +87,26 @@ main
              lRs = length . rivers . map . setup $ s
              lMs = length . mines  . map . setup $ s
 
-         putStrLn $      (show n)   ++ " Punters | "
-                      ++ (show lSs) ++ " Sites | "
-                      ++ (show lRs) ++ " Rivers | "
-                      ++ (show lMs) ++ " Mines "
-         hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
-         putStrLn $ "Your are Punter #" ++ (show p) ++ "\n"
+         hPutStrLn stderr $  (show n)   ++ " Punters | "
+                          ++ (show lSs) ++ " Sites | "
+                          ++ (show lRs) ++ " Rivers | "
+                          ++ (show lMs) ++ " Mines "
+         hPutStr stdout (pickle . lowcase . encodeJSON $ Ready p)
+         hFlush stdout
+         hPutStrLn stderr $ "Your are Punter #" ++ (show p) ++ "\n"
 
          let doOwnMove s =
                do (m, s) <- runStateT nextMove s
-                  putStrLn $ "Me:     " ++ show m
-                  hPutStr h (pickle . lowcase . encodeJSON $ m)
+                  hPutStrLn stderr $ "Me:     " ++ show m
+                  hPutStr stdout (pickle . lowcase . encodeJSON $ m)
+                  hFlush stdout
                   return s
 
          let loop s = 
-               do l <- hGetLine h >>= (\x -> return $ unpickle x)
+               do l <- hGetLine stdin >>= (\x -> return $ unpickle x)
                   let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
                       lastMoves      = M.moves lastServerMove
-                  putStrLn $ "Server: " ++ show lastServerMove
+                  hPutStrLn stderr $ "Server: " ++ show lastServerMove
                   (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                   let remainingMoves = remaining s
