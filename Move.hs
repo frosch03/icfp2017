@@ -3,6 +3,7 @@
 module Move
     (  Move(..)
     , SimpleMove(..)
+    , isStopped
     )
 where
 
@@ -16,6 +17,9 @@ import Map (SiteId)
 
 type PunterId = Int
 
+isStopped :: Move -> Bool
+isStopped (Move _)   = False
+isStopped (Stop _ _) = True
 
 data Move
     = Move
