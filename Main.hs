@@ -52,18 +52,15 @@ main
 
          let doOwnMove s =
                do (m, s) <- runStateT nextMove s
-                  putStrLn $ "   " ++ show m
+                  putStrLn $ "Me:     " ++ show m
                   hPutStr h (pickle . lowcase . encodeJSON $ m)
                   return s
 
          let loop s = 
-               do putStrLn $ (show . remaining $ s) ++ " remaining Moves"
-
-                  l <- hGetLine h >>= (\x -> return $ unpickle x)
+               do l <- hGetLine h >>= (\x -> return $ unpickle x)
                   let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
                       lastMoves      = M.moves lastServerMove
-                  putStrLn $ show lastServerMove
-
+                  putStrLn $ "Server: " ++ show lastServerMove
                   (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                   let remainingMoves = remaining s
