@@ -12,6 +12,7 @@ where
 
 import Text.JSON.Generic
 import Control.Monad.State
+import Data.List
 
 import qualified Move as M
 import Map 
@@ -41,8 +42,64 @@ isAdjToOneOf rivers river
     = foldl (\r n -> (isAdjTo river n) || r) False rivers
 
 
-unclaimedRiverAtMine :: GameState -> Maybe River
-unclaimedRiverAtMine s
+connectedSites :: GameState -> [SiteId]
+connectedSites s
+    = nub sites
+    where
+      myRs  = myRivers s
+      sites = foldr (\n r -> (source n):(target n):r) [] myRs
+
+riversAtClaimed :: GameState -> [River]
+riversAtClaimed s
+    = [x | x <- freeRs, foldl (\r n -> r || (isAdjToSite x n)) False connSites]
+    where
+      connSites = connectedSites s
+      freeRs    = unclaimed $ s
+
+
+
+riverAtClaimed :: GameState -> Maybe River
+riverAtClaimed s
+    | length (riversAtClaimed s) == 0
+    = Nothing
+
+    | otherwise
+    = Just $ head . riversAtClaimed $ s
+
+
+riverAtClaimedTip :: GameState -> Maybe River
+riverAtClaimedTip s
+    | length tipRs == 0
+    = Nothing
+
+    | otherwise
+    = Just $ head tipRs
+    where
+      tipRs = [x | x <-  rsAtC, cond x]
+      rsAtC = riversAtClaimed s
+      css   = connectedSites s
+      cond x =   (any (== (source x)) css && any (/= (target x)) css)
+               || (any (== (target x)) css && any (/= (source x)) css)
+
+          
+                 
+firstRiverAtMine :: GameState -> Maybe River
+firstRiverAtMine s
+    | length myRsAtMine > 0
+    = Nothing
+
+    | otherwise
+    = riverAtMine s
+    where
+      myRs       = myRivers s
+      mineSites  = mines . gamemap $ s
+      myRsAtMine = [x | x <- myRs, cond x]
+      cond x = any (== (source x)) mineSites || any (== (target x)) mineSites
+      
+
+
+riverAtMine :: GameState -> Maybe River
+riverAtMine s
     | length mineRs == 0
     = Nothing
 
@@ -74,8 +131,12 @@ aRiver = head . unclaimed
 nextMove :: GSM (M.SimpleMove) 
 nextMove 
     = do s <- get
-         let nextAdj = maybe (aRiver s) Prelude.id (adjacentRiver s)
-             next    = maybe nextAdj    Prelude.id (unclaimedRiverAtMine s)
+         let next = nextAtTip
+             nextAtTip     = maybe (nextAtClaimed) Prelude.id (riverAtClaimedTip s)
+             nextAtClaimed = maybe (nextAtMine)    Prelude.id (riverAtClaimed s)
+             nextAtMine    = maybe (nextAdjacent)  Prelude.id (firstRiverAtMine s)
+             nextAdjacent  = maybe (nextAnyRiver)  Prelude.id (adjacentRiver s)
+             nextAnyRiver  = aRiver s
              pid  = ownid $ s
              sm   = M.Claim pid (source next) (target next)
              s'   = s { unclaimed = [x | x <- unclaimed $ s, x /= next]
