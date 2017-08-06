@@ -3,12 +3,19 @@ module Auxiliary
     , rightcase
     , injectGameState
     , reparenMove
+    , takeWhileM
+    , takeCountM
+    , protoRead
+    , protoWrite
+    , debugWrite
     )
 where
 
 import Prelude hiding (tail, reverse)
 import Data.Text hiding (toLower, drop)
 import qualified Data.Char as DC
+import Control.Monad.State
+import System.IO
 
 
 toLower :: String -> String
@@ -41,3 +48,42 @@ reparenMove
       . (replace (pack "},{\"gamemap\":") (pack ",\"state\":{\"gamemap\":"))
       . Data.Text.reverse . Data.Text.tail . Data.Text.reverse . Data.Text.tail
       . pack
+
+
+
+takeWhileM :: Monad m => (a -> Bool) -> [m a] -> m [a]
+takeWhileM p (ma : mas) = do
+    a <- ma
+    if p a
+      then liftM (a :) $ takeWhileM p mas
+      else return []
+takeWhileM _ _ = return []
+                 
+       
+takeCountM :: Monad m => Int -> [m a] -> m [a]
+takeCountM 1 (ma : _)
+    = do a <- ma
+         return [a]
+takeCountM cnt (ma : mas)
+    = do a <- ma
+         liftM (a :) $ takeCountM (cnt - 1) mas
+takeCountM _ _ = return []
+
+
+protoWrite :: String -> IO ()
+protoWrite s
+    = do hPutStr stdout s
+         hFlush stdout
+
+protoRead :: IO String
+protoRead
+    = do x <- takeWhileM (/= ':') (repeat getChar)
+         let x' = ((read x) :: Int)
+         x <- takeCountM x' (repeat getChar)
+         return x
+       
+debugWrite :: String -> IO ()
+debugWrite s
+    = do hPutStrLn  stderr s
+         hFlush stderr
+
