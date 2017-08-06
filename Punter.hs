@@ -25,6 +25,7 @@ data Settings
     = Settings
       { splurges :: Bool
       , futures  :: Bool
+      , options  :: Bool
       } deriving (Show, Data, Typeable)
 
 data Setup
@@ -89,7 +90,7 @@ pSetup
                   char ','
                   sta <- pState
                   char '}'
-                  return (Setup p n m sta (Settings False False))
+                  return (Setup p n m sta (Settings False False False))
              )
 
 
@@ -101,7 +102,6 @@ pState
          return (GameState (Map [] [] []) 0 0 [] [] 0)
 
 
-
 pSettings :: GenParser Char st Settings
 pSettings
     = try ( do string "\"settings\":"
@@ -109,8 +109,74 @@ pSettings
                sp <- pQuotedBool "splurges"
                char ','
                fu <- pQuotedBool "futures"
+               char ','
+               op <- pQuotedBool "options"
                char '}'
-               return (Settings sp fu)
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               fu <- pQuotedBool "futures"
+               char ','
+               sp <- pQuotedBool "splurges"
+               char ','
+               op <- pQuotedBool "options"
+               char '}'
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               sp <- pQuotedBool "splurges"
+               char ','
+               op <- pQuotedBool "options"
+               char ','
+               fu <- pQuotedBool "futures"
+               char '}'
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               op <- pQuotedBool "options"
+               char ','
+               sp <- pQuotedBool "splurges"
+               char ','
+               fu <- pQuotedBool "futures"
+               char '}'
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               op <- pQuotedBool "options"
+               char ','
+               fu <- pQuotedBool "futures"
+               char ','
+               sp <- pQuotedBool "splurges"
+               char '}'
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               fu <- pQuotedBool "futures"
+               char ','
+               op <- pQuotedBool "options"
+               char ','
+               sp <- pQuotedBool "splurges"
+               char '}'
+               return (Settings sp fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               sp <- pQuotedBool "splurges"
+               char ','
+               fu <- pQuotedBool "futures"
+               char '}'
+               return (Settings sp fu False)
           )
       <|>
       try ( do string "\"settings\":"
@@ -119,20 +185,66 @@ pSettings
                char ','
                sp <- pQuotedBool "splurges"
                char '}'
-               return (Settings sp fu)
+               return (Settings sp fu False)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               op <- pQuotedBool "options"
+               char ','
+               sp <- pQuotedBool "splurges"
+               char '}'
+               return (Settings sp False op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               sp <- pQuotedBool "splurges"
+               char ','
+               op <- pQuotedBool "options"
+               char '}'
+               return (Settings sp False op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               fu <- pQuotedBool "futures"
+               char ','
+               op <- pQuotedBool "options"
+               char '}'
+               return (Settings False fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               op <- pQuotedBool "options"
+               char ','
+               fu <- pQuotedBool "futures"
+               char '}'
+               return (Settings False fu op)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               fu <- pQuotedBool "futures"
+               char '}'
+               return (Settings False fu False)
+          )
+      <|>
+      try ( do string "\"settings\":"
+               char '{'
+               op <- pQuotedBool "options"
+               char '}'
+               return (Settings False False op)
           )
       <|>
       try ( do string "\"settings\":"
                char '{'
                sp <- pQuotedBool "splurges"
                char '}'
-               return (Settings sp False)
+               return (Settings sp False False)
           )
-      <|> ( do string "\"settings\":"
-               char '{'
-               fu <- pQuotedBool "futures"
-               char '}'
-               return (Settings False fu)
+      <|> ( do return (Settings False False False)
           )
 
 
