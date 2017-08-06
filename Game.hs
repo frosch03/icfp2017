@@ -24,6 +24,7 @@ initialize :: String -> GameState
 initialize s
     = GameState (Punter.map js) (punter js) (punters js) rs [] (length rs)
     where
+
       js = read s
       rs = rivers . Punter.map $ js
 
@@ -154,11 +155,23 @@ eliminateMove m@(M.Claim _ src tgt)
     = do s <- get
          let freeRivers  = unclaimed $ s
              freeRivers' = [x | x <- freeRivers, x /= claimedRiver]
-             s'          = s { unclaimed = freeRivers'
-                             , remaining = (remaining $ s) - 1
-                             }
+             s' = s { unclaimed = freeRivers'
+                    , remaining = (remaining $ s) - 1
+                    }
          put s'
          gsmIO $ return m
     where
       claimedRiver = River src tgt
+
+eliminateMove m@(M.Splurge _ sids)
+    = do s <- get
+         let claimedRivers = [(River s t) | (s, t) <- zip sids (tail sids)]
+             freeRivers    = unclaimed s
+             freeRivers'   = [x | x <- freeRivers, any (/= x) claimedRivers]
+             s' = s { unclaimed = freeRivers
+                    , remaining = (remaining $ s) - 1
+                    }
+         put s'
+         gsmIO $ return m
+
 

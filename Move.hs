@@ -66,6 +66,15 @@ data SimpleMove
     | Pass
       { punter :: PunterId
       }
+    | Splurge
+      { punter :: PunterId
+      , route  :: [SiteId]
+      }
+    | Option
+      { punter :: PunterId
+      , source :: SiteId
+      , target :: SiteId
+      }
     deriving (Data, Typeable)
 
 instance Show SimpleMove where
@@ -76,6 +85,12 @@ instance Show SimpleMove where
     show (Pass p)
         = (show p) ++ ": Pass"
 
+    show (Splurge p r)
+        = (show p) ++ ": " ++ (show r)
+
+    show (Option p s t) 
+        = (show p) ++ ": opt(" ++
+          (show s) ++ "--" ++ (show t) ++ ")"
 
 
 pMove :: GenParser Char st Move 
@@ -93,7 +108,8 @@ pMove
                   char '}'
                   return (Move sms st)
              )
-         <|> ( do char '{'
+         <|>
+         try ( do char '{'
                   string "\"stop\":"
                   char '{'
                   sms <- pSimpleMoves
@@ -156,7 +172,8 @@ pSimpleMove
                   char '}'
                   return (Claim p s t)
              )
-         <|> ( do char '{'
+         <|>
+         try ( do char '{'
                   string "\"pass\":"
                   char '{'
                   p <- pPunter
@@ -164,8 +181,34 @@ pSimpleMove
                   char '}'
                   return (Pass p)
              )
+         <|>
+         try ( do char '{'
+                  string "\"splurge\":"
+                  char '{'
+                  p <- pPunter
+                  char ','
+                  r <- pRoute
+                  char '}'
+                  char '}'
+                  return (Splurge p r)
+             )
+         <|> ( do char '{'
+                  string "\"option\":"
+                  char '{'
+                  p <- pPunter
+                  char ','
+                  s <- pSource
+                  char ','
+                  t <- pTarget
+                  char '}'
+                  char '}'
+                  return (Option p s t)
+             )
 
                
+pRoute :: GenParser Char st [Int]
+pRoute = pQuotedInts "route"
+
 pPunter :: GenParser Char st Int
 pPunter = pQuotedInt "punter"
           

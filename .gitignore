@@ -4,5 +4,5 @@
 *.log
 /run
 /TAGS
-/submission/PACKAGES
-/submission/README
+/submission/*
+
