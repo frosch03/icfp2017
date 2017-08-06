@@ -5,6 +5,7 @@ module Punter
     , GSM
     , PunterId
     , GameState(..)
+    , Settings(..)
     , gsmIO
     )
 where
@@ -18,12 +19,19 @@ import Auxiliary
 
 type PunterId = Int
 
+data Settings
+    = Settings
+      { splurges :: Bool
+      , futures  :: Bool
+      } deriving (Show, Data, Typeable)
+
 data Setup
     = Setup
-      { punter  :: PunterId
-      , punters :: Int
-      , map     :: Map
-      , state   :: GameState
+      { punter   :: PunterId
+      , punters  :: Int
+      , map      :: Map
+      , state    :: GameState
+      , settings :: Settings
       } deriving (Show, Data, Typeable)
 
 data GameState
