@@ -24,7 +24,7 @@ initialize :: String -> GameState
 initialize s
     = GameState (Punter.map js) (punter js) (punters js) rs [] (length rs)
     where
-      js = decodeJSON . injectGameState $ rightcase s
+      js = read s
       rs = rivers . Punter.map $ js
 
 
