@@ -16,7 +16,8 @@ import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>))
 
 import qualified Move as M
-import Map 
+import Map
+import Punter
 import Auxiliary 
 
 
@@ -28,6 +29,7 @@ data Name
 data Ready
     = Ready
       { ready :: Int
+      , state :: MyState
       } deriving (Show, Data, Typeable)
 
 

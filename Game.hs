@@ -2,7 +2,6 @@
 
 module Game
     ( Setup(..)
-    , GameState(..)
     , PunterId
     , initialize
     , gsmIO
@@ -20,11 +19,11 @@ import Auxiliary
 import Punter
 
 
-initialize :: String -> GameState
+initialize :: String -> MyState
 initialize s
-    = GameState js rs [] (length rs)
+    = MyState (Punter.map js) (punter js) (punters js) rs [] (length rs)
     where
-      js = decodeJSON $ rightcase s
+      js = decodeJSON . injectMyState $ rightcase s
       rs = rivers . Punter.map $ js
 
 
@@ -42,7 +41,7 @@ isAdjToOneOf rivers river
     = foldl (\r n -> (isAdjTo river n) || r) False rivers
 
 
-unclaimedRiverAtMine :: GameState -> Maybe River
+unclaimedRiverAtMine :: MyState -> Maybe River
 unclaimedRiverAtMine s
     | length mineRs == 0
     = Nothing
@@ -50,12 +49,12 @@ unclaimedRiverAtMine s
     | otherwise
     = Just $ head mineRs
     where
-      allMines = mines . Punter.map . setup $ s
-      freeRs   = unclaimed s
+      allMines = mines . Punter.gamemap $ s
+      freeRs   = unclaimed $ s
       mineRs   = [x | x <- freeRs, foldl (\r n -> r || (isAdjToSite x n)) False allMines]
                  
 
-adjacentRiver :: GameState -> Maybe River
+adjacentRiver :: MyState -> Maybe River
 adjacentRiver s
     | length goodRs == 0
     = Nothing
@@ -64,11 +63,11 @@ adjacentRiver s
     = Just (head goodRs)
     where
       freeRs = unclaimed $ s
-      myRs   = myRivers $ s
+      myRs   = myRivers  $ s
       goodRs = [x | x <- freeRs, (isAdjToOneOf myRs) x]
 
 
-aRiver :: GameState -> River
+aRiver :: MyState -> River
 aRiver = head . unclaimed
 
 
@@ -77,13 +76,13 @@ nextMove
     = do s <- get
          let nextAdj = maybe (aRiver s) Prelude.id (adjacentRiver s)
              next    = maybe nextAdj    Prelude.id (unclaimedRiverAtMine s)
-             pid  = punter . setup $ s
-             m    = M.Claim pid (source next) (target next)
+             pid  = ownid $ s
+             sm   = M.Claim pid (source next) (target next)
              s'   = s { unclaimed = [x | x <- unclaimed $ s, x /= next]
-                      , myRivers  = next : (myRivers s)
+                      , myRivers  = next : (myRivers $ s)
                       }
          put s'
-         gsmIO $ return m
+         gsmIO $ return sm
 
 
 eliminateMove :: M.SimpleMove -> GSM (M.SimpleMove)
@@ -92,10 +91,10 @@ eliminateMove m@(M.Pass _)
 
 eliminateMove m@(M.Claim _ src tgt)
     = do s <- get
-         let freeRivers  = unclaimed s
+         let freeRivers  = unclaimed $ s
              freeRivers' = [x | x <- freeRivers, x /= claimedRiver]
              s'          = s { unclaimed = freeRivers'
-                             , remaining = remaining s - 1
+                             , remaining = (remaining $ s) - 1
                              }
          put s'
          gsmIO $ return m

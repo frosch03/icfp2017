@@ -10,6 +10,7 @@ import Control.Monad.State
 import Network
 import System.IO
 import System.Environment
+import qualified Data.Text as T
 
 import qualified Move as M
 import Map 
@@ -42,21 +43,21 @@ takeCountM cnt (ma : mas)
 takeCountM _ _ = return []
 
 
-sWrite :: String -> IO ()
-sWrite s
+protoWrite :: String -> IO ()
+protoWrite s
     = do hPutStr stdout s
          hFlush stdout
 
-sRead :: IO String
-sRead
+protoRead :: IO String
+protoRead
     = do x <- takeWhileM (/= ':') (repeat getChar)
          let x' = ((read x) :: Int)
          x <- takeCountM x' (repeat getChar)
          return x
        
-dWrite :: String -> IO ()
-dWrite s
-    = do hPutStrLn stderr s
+debugWrite :: String -> IO ()
+debugWrite s
+    = do hPutStrLn  stderr s
          hFlush stderr
 
 main :: IO ()
@@ -65,43 +66,54 @@ main
          hSetBuffering stdout NoBuffering
          hSetBuffering stderr NoBuffering
 
-         sWrite (pickle . lowcase . encodeJSON $ player)
+         protoWrite (pickle . lowcase . encodeJSON $ player)
 
-         _ <- sRead
+         _ <- protoRead
 
-         l <- sRead
-         dWrite ("GameState received")
+         l <- protoRead
 
-         let s   = initialize l
-             p   = punter  . setup $ s
-             n   = punters . setup $ s
-             lSs = length . sites  . map . setup $ s
-             lRs = length . rivers . map . setup $ s
-             lMs = length . mines  . map . setup $ s
+         let doReady l
+                 = do debugWrite ("GameState received")
+                      let s   = initialize l
+                          p   = ownid $ s
+                          n   = pcount $ s
+                          lSs = length . sites  . gamemap $ s
+                          lRs = length . rivers . gamemap $ s
+                          lMs = length . mines  . gamemap $ s
 
-         dWrite $  (show n) ++ " Punters | "
-                            ++ (show lSs) ++ " Sites | "
-                            ++ (show lRs) ++ " Rivers | "
-                            ++ (show lMs) ++ " Mines "
-         sWrite (pickle . lowcase . encodeJSON $ Ready p)
-         dWrite $ "Your are Punter #" ++ (show p) ++ "\n"
+                      debugWrite $  (show n) ++ " Punters | "
+                                 ++ (show lSs) ++ " Sites | "
+                                 ++ (show lRs) ++ " Rivers | "
+                                 ++ (show lMs) ++ " Mines "
+                      protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
+                      debugWrite $ "Your are Punter #" ++ (show p) ++ "\n"
 
          let doOwnMove s =
-               do (m, s) <- runStateT nextMove s
-                  dWrite $ "Me:     " ++ show m
-                  sWrite (pickle . lowcase . encodeJSON $ m)
-                  return s
+                 do (sm, s) <- runStateT nextMove s
+                    debugWrite $ "Me:     " ++ show sm
+                    protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
+                    return s
 
-         let loop s = 
-               do l <- sRead
-                  let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
-                      lastMoves      = M.moves lastServerMove
-                  dWrite $ "Server: " ++ show lastServerMove
-                  (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
-                  let remainingMoves = remaining s
+         let doMove l =
+                 do let (M.Move lastMoves s) = ((read l) :: M.Move)
+                        p = ownid $ s
+                    debugWrite $ "Server: " ++ (show ((read l) :: M.Move))
+                    (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
+                    let remainingMoves = remaining
                   
-                  when (not(M.isStopped lastServerMove)) (doOwnMove s >>= (\x -> loop x))
-         loop s
+                    doOwnMove s
+                    return ()
+
+         let doStop l =
+                 do debugWrite $ "Server: " ++ (show ((read l) :: M.Move))
+                    return ()
+
+
+         (case (tail . takeWhile (/= ':') $ l) of
+            "\"punter\"" -> doReady l
+            "\"move\""   -> doMove l
+            "\"stop\""   -> doStop l)
+
          return ()
