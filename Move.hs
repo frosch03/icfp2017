@@ -18,6 +18,7 @@ import qualified Score as S
 import Auxiliary
 import Map (SiteId, Map(..), Site(..), River(..))
 import Punter (GameState(..))
+import Parsers 
 
 type PunterId = Int
 
@@ -165,13 +166,6 @@ pSimpleMove
              )
 
                
-pQuotedInt :: String -> GenParser Char st Int
-pQuotedInt s
-    = do string $ "\"" ++ s ++ "\":"
-         ds <- many digit
-         return (read ds)
-
-
 pPunter :: GenParser Char st Int
 pPunter = pQuotedInt "punter"
           
@@ -203,13 +197,8 @@ pSites
          return sites
 
 pMines :: GenParser Char st [Int]
-pMines
-    = do string "\"mines\":"
-         char '['
-         mines  <- sepBy (many digit) (char ',')
-         char ']'
-         return $ map read $ mines
-           
+pMines = pQuotedInts "mines"
+
 pOwnId :: GenParser Char st Int
 pOwnId = pQuotedInt "ownid"
          
