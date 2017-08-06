@@ -3,3 +3,6 @@
 /test
 *.log
 /run
+/TAGS
+/submission/PACKAGES
+/submission/README
