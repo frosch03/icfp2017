@@ -17,7 +17,7 @@ import Data.Char
 import qualified Score as S
 import Auxiliary
 import Map (SiteId, Map(..), Site(..), River(..))
-import Punter (MyState(..))
+import Punter (GameState(..))
 
 type PunterId = Int
 
@@ -32,7 +32,7 @@ isStopped (Stop _ _) = True
 data Move
     = Move
       { moves :: [SimpleMove]
-      , state :: MyState
+      , state :: GameState
       }
     | Stop
       { moves :: [SimpleMove]
@@ -87,7 +87,7 @@ pMove
                   char ','
                   string "\"state\":"
                   char '{'
-                  st  <- pMyState
+                  st  <- pGameState
                   char '}'
                   char '}'
                   return (Move sms st)
@@ -102,7 +102,7 @@ pMove
                   char ','
                   string "\"state\":"
                   char '{'
-                  st  <- pMyState
+                  st  <- pGameState
                   char '}'
                   char '}'
                   return (Stop sms scs)
@@ -262,8 +262,8 @@ pRemaining :: GenParser Char st Int
 pRemaining = pQuotedInt "remaining"
 
 
-pMyState :: GenParser Char st MyState
-pMyState
+pGameState :: GenParser Char st GameState
+pGameState
     = do g <- pGameMap
          char ','
          p <- pOwnId
@@ -275,4 +275,4 @@ pMyState
          mr <- pMyRivers
          char ','
          r  <- pRemaining
-         return (MyState g p n uc mr r)
+         return (GameState g p n uc mr r)

@@ -2,10 +2,9 @@
 
 module Punter
     ( Setup(..)
-    , GameState(..)
     , GSM
     , PunterId
-    , MyState(..)
+    , GameState(..)
     , gsmIO
     )
 where
@@ -24,11 +23,11 @@ data Setup
       { punter  :: PunterId
       , punters :: Int
       , map     :: Map
-      , state   :: MyState
+      , state   :: GameState
       } deriving (Show, Data, Typeable)
 
-data MyState
-    = MyState
+data GameState
+    = GameState
       { gamemap   :: Map
       , ownid     :: Int
       , pcount    :: Int
@@ -37,14 +36,7 @@ data MyState
       , remaining :: Int
       } deriving (Show, Data, Typeable)
 
-data GameState
-    = GameState
-      { setup   :: Setup
-      , mystate :: MyState
-      } deriving (Show, Data, Typeable)
-
-
-type GSM = StateT MyState IO
+type GSM = StateT GameState IO
 
 gsmIO :: IO a -> GSM a
 gsmIO = liftIO

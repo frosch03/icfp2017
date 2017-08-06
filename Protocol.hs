@@ -29,7 +29,7 @@ data Name
 data Ready
     = Ready
       { ready :: Int
-      , state :: MyState
+      , state :: GameState
       } deriving (Show, Data, Typeable)
 
 

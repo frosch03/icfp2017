@@ -19,11 +19,11 @@ import Auxiliary
 import Punter
 
 
-initialize :: String -> MyState
+initialize :: String -> GameState
 initialize s
-    = MyState (Punter.map js) (punter js) (punters js) rs [] (length rs)
+    = GameState (Punter.map js) (punter js) (punters js) rs [] (length rs)
     where
-      js = decodeJSON . injectMyState $ rightcase s
+      js = decodeJSON . injectGameState $ rightcase s
       rs = rivers . Punter.map $ js
 
 
@@ -41,7 +41,7 @@ isAdjToOneOf rivers river
     = foldl (\r n -> (isAdjTo river n) || r) False rivers
 
 
-unclaimedRiverAtMine :: MyState -> Maybe River
+unclaimedRiverAtMine :: GameState -> Maybe River
 unclaimedRiverAtMine s
     | length mineRs == 0
     = Nothing
@@ -54,7 +54,7 @@ unclaimedRiverAtMine s
       mineRs   = [x | x <- freeRs, foldl (\r n -> r || (isAdjToSite x n)) False allMines]
                  
 
-adjacentRiver :: MyState -> Maybe River
+adjacentRiver :: GameState -> Maybe River
 adjacentRiver s
     | length goodRs == 0
     = Nothing
@@ -67,7 +67,7 @@ adjacentRiver s
       goodRs = [x | x <- freeRs, (isAdjToOneOf myRs) x]
 
 
-aRiver :: MyState -> River
+aRiver :: GameState -> River
 aRiver = head . unclaimed
 
 

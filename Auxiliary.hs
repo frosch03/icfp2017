@@ -1,7 +1,7 @@
 module Auxiliary
     ( lowcase
     , rightcase
-    , injectMyState
+    , injectGameState
     , reparenMove
     )
 where
@@ -29,8 +29,8 @@ rightcase s
       s5 = replace (pack "myrivers")  (pack "myRivers")  s4
       s6 = replace (pack "pass")      (pack "Pass")      s5
       
-injectMyState :: String -> String
-injectMyState
+injectGameState :: String -> String
+injectGameState
     = unpack . (replace (pack "\"state\":{}") (pack "\"state\":{\"gamemap\":{\"sites\":[],\"rivers\":[],\"mines\":[]},\"ownid\":0,\"pcount\":0,\"unclaimed\":[],\"myRivers\":[],\"remaining\":0}")) . pack
 
 
