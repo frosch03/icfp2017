@@ -39,22 +39,30 @@ main
          let doReady l
                  = do debugWrite ("GameState received")
                       let s   = initialize l
+                          set = settings $ ((read l) :: Setup)
                           p   = ownid $ s
                           n   = pcount $ s
                           lSs = length . sites  . gamemap $ s
                           lRs = length . rivers . gamemap $ s
-                          lMs = length . mines  . gamemap $ s
+                          ms  = mines  . gamemap $ s
+                          exS = splurges $ set
+                          exF = futures  $ set
+                          exO = options  $ set
 
                       debugWrite $  (show n) ++ " Punters | "
                                  ++ (show lSs) ++ " Sites | "
-                                 ++ (show lRs) ++ " Rivers | "
-                                 ++ (show lMs) ++ " Mines "
+                                 ++ (show lRs) ++ " Rivers"
+                      debugWrite $ "Mines:      "  ++ (show ms) 
+                      debugWrite $ "Extensions: "  ++
+                                     (if exF then "F" else "_") ++ "/" ++
+                                     (if exS then "S" else "_") ++ "/" ++
+                                     (if exO then "O" else "_")
                       protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
                       debugWrite $ "Your are Punter #" ++ (show p) ++ "\n"
 
          let doOwnMove s =
                  do (sm, s) <- runStateT nextMove s
-                    debugWrite $ "Me:     " ++ show sm
+                    debugWrite $ "Me: " ++ (drop 3 $ show sm)
                     protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
                     return s
 

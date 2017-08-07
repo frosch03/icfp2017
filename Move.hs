@@ -44,12 +44,12 @@ data Move
 
 instance Show Move where
     show (Move sms _)
-        = "[" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]" sms)
+        = "[" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) "]" sms)
 
     show (Stop sms scs)
         =    "Game Stopped\n\n"
-          ++ "Last moves:" ++ "[" ++ (foldr (\n r -> (show n) ++ ", " ++ r) "]\n" sms)
-          ++ "Scores:    " ++ "(" ++ (foldr (\n r -> (show n) ++ ", " ++ r) ")" scs)
+          ++ "Last moves:" ++ "[" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) "]\n" sms)
+          ++ "Scores:    " ++ "(" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) ")" scs)
 
 instance Read (Move) where
     readsPrec p s = case parse pMove "" s of
@@ -281,9 +281,27 @@ pUnclaimed
          return rivers
 
 
-pMyRivers :: GenParser Char st [River]
-pMyRivers 
-    = do string "\"myrivers\":"
+pMyclaimed :: GenParser Char st [River]
+pMyclaimed 
+    = do string "\"myclaimed\":"
+         char '['
+         rivers  <- sepBy pRiver (char ',')
+         char ']'
+         return rivers
+
+
+pUnOpted :: GenParser Char st [River]
+pUnOpted 
+    = do string "\"unopted\":"
+         char '['
+         rivers  <- sepBy pRiver (char ',')
+         char ']'
+         return rivers
+
+
+pMyOpted :: GenParser Char st [River]
+pMyOpted  
+    = do string "\"myopted\":"
          char '['
          rivers  <- sepBy pRiver (char ',')
          char ']'
@@ -292,6 +310,9 @@ pMyRivers
 
 pRemaining :: GenParser Char st Int
 pRemaining = pQuotedInt "remaining"
+
+pOptionCredit :: GenParser Char st Int
+pOptionCredit = pQuotedInt "opcredit"
 
 
 pGameState :: GenParser Char st GameState
@@ -304,7 +325,13 @@ pGameState
          char ','
          uc <- pUnclaimed
          char ','
-         mr <- pMyRivers
+         mc <- pMyclaimed
+         char ','
+         uo <- pUnOpted
+         char ','
+         mo <- pMyOpted
+         char ','
+         oc  <- pOptionCredit
          char ','
          r  <- pRemaining
-         return (GameState g p n uc mr r)
+         return (GameState g p n uc mc uo mo oc r)

@@ -11,8 +11,8 @@ import Text.ParserCombinators.Parsec
 pQuotedInt :: String -> GenParser Char st Int
 pQuotedInt s
     = do string $ "\"" ++ s ++ "\":"
-         ds <- many digit
-         return (read ds)
+         ds <- pInt
+         return ds
 
 pBool :: GenParser Char st Bool
 pBool
@@ -44,7 +44,16 @@ pQuotedInts :: String -> GenParser Char st [Int]
 pQuotedInts s
     = do string $ "\"" ++ s ++ "\":"
          char '['
-         ints  <- sepBy (many digit) (char ',')
+         ints  <- sepBy (pInt) (char ',')
          char ']'
-         return $ map read $ ints
+         return $ ints
            
+pInt :: GenParser Char st Int
+pInt
+    = do try ( do (char '-')
+                  ds <- many digit
+                  return (-1 * (read ds))
+             )
+         <|> ( do ds <- many digit
+                  return ((read ds))
+             )

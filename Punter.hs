@@ -48,7 +48,10 @@ data GameState
       , ownid     :: Int
       , pcount    :: Int
       , unclaimed :: [River]
-      , myRivers  :: [River]
+      , myclaimed :: [River]
+      , unopted   :: [River]
+      , myopted   :: [River]
+      , opcredit  :: Int
       , remaining :: Int
       } deriving (Show, Data, Typeable)
 
@@ -99,7 +102,7 @@ pState
     = do string "\"state\":"
          char '{'
          char '}'
-         return (GameState (Map [] [] []) 0 0 [] [] 0)
+         return (GameState (Map [] [] []) 0 0 [] [] [] [] 0 0)
 
 
 pSettings :: GenParser Char st Settings

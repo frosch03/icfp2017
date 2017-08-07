@@ -33,12 +33,12 @@ rightcase s
       s2 = replace (pack "stop\"")    (pack "Stop\"")    s1
       s3 = replace (pack "claim")     (pack "Claim")     s2
       s4 = replace (pack "unClaimed") (pack "unclaimed") s3
-      s5 = replace (pack "myrivers")  (pack "myRivers")  s4
+      s5 = replace (pack "myClaimed") (pack "myclaimed") s4
       s6 = replace (pack "pass")      (pack "Pass")      s5
       
 injectGameState :: String -> String
 injectGameState
-    = unpack . (replace (pack "\"state\":{}") (pack "\"state\":{\"gamemap\":{\"sites\":[],\"rivers\":[],\"mines\":[]},\"ownid\":0,\"pcount\":0,\"unclaimed\":[],\"myRivers\":[],\"remaining\":0}")) . pack
+    = unpack . (replace (pack "\"state\":{}") (pack "\"state\":{\"gamemap\":{\"sites\":[],\"rivers\":[],\"mines\":[]},\"ownid\":0,\"pcount\":0,\"unclaimed\":[],\"myclaimed\":[],\"unopted\":[],\"myopted\":[],\"opcredit\":0},\"remaining\":0}")) . pack
 
 
 reparenMove :: String -> String

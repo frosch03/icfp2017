@@ -22,11 +22,11 @@ import Punter
 
 initialize :: String -> GameState
 initialize s
-    = GameState (Punter.map js) (punter js) (punters js) rs [] (length rs)
+    = GameState (Punter.map js) (punter js) (punters js) rs [] rs [] (length rs) (length ms)
     where
-
       js = read s
       rs = rivers . Punter.map $ js
+      ms = mines  . Punter.map $ js
 
 
 isAdjToSite :: River -> SiteId -> Bool
@@ -47,8 +47,17 @@ connectedSites :: GameState -> [SiteId]
 connectedSites s
     = nub sites
     where
-      myRs  = myRivers s
+      myRs  = myclaimed s
       sites = foldr (\n r -> (source n):(target n):r) [] myRs
+
+
+myRiversAtSite :: GameState -> SiteId -> [River]
+myRiversAtSite s sid
+    = [x | x <- myclaimed s, sid == (source x) || sid == (target x)]
+
+freeRiversAtSite :: GameState -> SiteId -> [River]
+freeRiversAtSite s sid
+    = [x | x <- unclaimed s, sid == (source x) || sid == (target x)]
 
 riversAtClaimed :: GameState -> [River]
 riversAtClaimed s
@@ -76,11 +85,10 @@ riverAtClaimedTip s
     | otherwise
     = Just $ head tipRs
     where
-      tipRs = [x | x <-  rsAtC, cond x]
-      rsAtC = riversAtClaimed s
-      css   = connectedSites s
-      cond x =   (any (== (source x)) css && any (/= (target x)) css)
-               || (any (== (target x)) css && any (/= (source x)) css)
+      tipRs = [x | x <- riversAtClaimed s, cond x]
+      myRivCntAt sid = length $ myRiversAtSite s sid
+      cond x =   myRivCntAt (source x) == 0 && myRivCntAt (target x) == 1
+               || myRivCntAt (source x) == 1 && myRivCntAt (target x) == 0
 
           
                  
@@ -92,7 +100,7 @@ firstRiverAtMine s
     | otherwise
     = riverAtMine s
     where
-      myRs       = myRivers s
+      myRs       = myclaimed s
       mineSites  = mines . gamemap $ s
       myRsAtMine = [x | x <- myRs, cond x]
       cond x = any (== (source x)) mineSites || any (== (target x)) mineSites
@@ -121,7 +129,7 @@ adjacentRiver s
     = Just (head goodRs)
     where
       freeRs = unclaimed $ s
-      myRs   = myRivers  $ s
+      myRs   = myclaimed  $ s
       goodRs = [x | x <- freeRs, (isAdjToOneOf myRs) x]
 
 
@@ -133,15 +141,15 @@ nextMove :: GSM (M.SimpleMove)
 nextMove 
     = do s <- get
          let next = nextAtTip
-             nextAtTip     = maybe (nextAtClaimed) Prelude.id (riverAtClaimedTip s)
-             nextAtClaimed = maybe (nextAtMine)    Prelude.id (riverAtClaimed s)
-             nextAtMine    = maybe (nextAdjacent)  Prelude.id (firstRiverAtMine s)
+             nextAtTip     = maybe (nextAtMine)    Prelude.id (riverAtClaimedTip s)
+             nextAtMine    = maybe (nextAtClaimed) Prelude.id (firstRiverAtMine s)
+             nextAtClaimed = maybe (nextAdjacent)  Prelude.id (riverAtClaimed s)
              nextAdjacent  = maybe (nextAnyRiver)  Prelude.id (adjacentRiver s)
              nextAnyRiver  = aRiver s
              pid  = ownid $ s
              sm   = M.Claim pid (source next) (target next)
              s'   = s { unclaimed = [x | x <- unclaimed $ s, x /= next]
-                      , myRivers  = next : (myRivers $ s)
+                      , myclaimed  = next : (myclaimed $ s)
                       }
          put s'
          gsmIO $ return sm
@@ -174,4 +182,14 @@ eliminateMove m@(M.Splurge _ sids)
          put s'
          gsmIO $ return m
 
-
+eliminateMove m@(M.Option _ src tgt)
+    = do s <- get
+         let freeOptions  = unopted $ s
+             freeOptions' = [x | x <- freeOptions, x /= optedRiver]
+             s' = s { unclaimed = freeOptions'
+                    , opcredit = (opcredit $ s) - 1
+                    }
+         put s'
+         gsmIO $ return m
+    where
+      optedRiver = River src tgt
