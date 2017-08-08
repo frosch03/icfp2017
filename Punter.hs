@@ -102,7 +102,7 @@ pState
     = do string "\"state\":"
          char '{'
          char '}'
-         return (GameState (Map [] [] []) 0 0 [] [] [] [] 0 0)
+         return (GameState (Map [] [] []) 0 0 [] [] [] [] 0)
 
 
 pSettings :: GenParser Char st Settings

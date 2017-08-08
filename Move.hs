@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Move
     ( Move(..)
     , SimpleMove(..)
+    , TmpShow(..)
     , isStopped
     , getSimpleMoves
     )
@@ -21,6 +23,10 @@ import Punter (GameState(..))
 import Parsers 
 
 type PunterId = Int
+
+colors :: [String]
+colors = ["#800000", "#ff0000", "#808000", "#ffff00", "#008000", "#00ff00", "#008080", "#404040", "#00ffff", "#000080", "#0000ff", "#000000", "#800080", "#a0a0a0", "#ff00ff", "#f0f00f0"]
+
 
 getSimpleMoves :: Move -> [SimpleMove]
 getSimpleMoves (Move sm _) = sm
@@ -43,13 +49,14 @@ data Move
 
 
 instance Show Move where
-    show (Move sms _)
-        = "[" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) "]" sms)
+    show (Move sms s)
+        = foldr (\n r -> "    " ++ (show (TmpShow i n)) ++ "\n" ++ r) "" sms
+        where
+          i = remaining s
 
     show (Stop sms scs)
-        =    "Game Stopped\n\n"
-          ++ "Last moves:" ++ "[" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) "]\n" sms)
-          ++ "Scores:    " ++ "(" ++ (drop 2 $ foldr (\n r -> ", " ++ (show n) ++ r) ")" scs)
+        = (foldr (\n r -> "    " ++ (show (TmpShow 0 n)) ++ "\n" ++ r) "" sms)
+          ++ "}\n"
 
 instance Read (Move) where
     readsPrec p s = case parse pMove "" s of
@@ -77,20 +84,36 @@ data SimpleMove
       }
     deriving (Data, Typeable)
 
-instance Show SimpleMove where
-    show (Claim p s t)
-        = (show p) ++ ": " ++
-          (show s) ++ "--" ++ (show t)
 
-    show (Pass p)
-        = (show p) ++ ": Pass"
 
-    show (Splurge p r)
-        = (show p) ++ ": " ++ (show r)
 
-    show (Option p s t) 
-        = (show p) ++ ": opt(" ++
-          (show s) ++ "--" ++ (show t) ++ ")"
+data TmpShow 
+    = TmpShow
+      { tmpRemaining :: Int
+      , tmpTheMove   :: SimpleMove
+      } 
+
+instance Show TmpShow where
+    show (TmpShow i (Claim p s t))
+        = "q" ++ (show s) ++ "--q" ++ (show t) ++
+          " [ color = \"" ++ colors!!p ++
+          "\", penwidth = \"3\", label = \"" ++ (show p) ++ ", " ++
+                                              (show i) ++ "\" ];"
+
+    show (TmpShow i (Pass p))
+        = ""
+
+    show (TmpShow i (Splurge p r))
+        = concat $ zipWith (\s t -> (show (TmpShow i (Claim p s t)))) r $ tail r
+
+    show (TmpShow i (Option p s t) )
+        = "q" ++ (show s) ++ "--q" ++ (show t) ++
+          " [ color = \"" ++ (colors!!p) ++
+          "\", penwidth = \"2\", label = \"" ++ (show p) ++ ", " ++
+                                              (show i) ++ "\" ];"
+
+
+             
 
 
 pMove :: GenParser Char st Move 

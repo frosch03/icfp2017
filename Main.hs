@@ -37,8 +37,7 @@ main
          l <- protoRead
 
          let doReady l
-                 = do debugWrite ("GameState received")
-                      let s   = initialize l
+                 = do let s   = initialize l
                           set = settings $ ((read l) :: Setup)
                           p   = ownid $ s
                           n   = pcount $ s
@@ -49,20 +48,22 @@ main
                           exF = futures  $ set
                           exO = options  $ set
 
-                      debugWrite $  (show n) ++ " Punters | "
-                                 ++ (show lSs) ++ " Sites | "
-                                 ++ (show lRs) ++ " Rivers"
-                      debugWrite $ "Mines:      "  ++ (show ms) 
-                      debugWrite $ "Extensions: "  ++
-                                     (if exF then "F" else "_") ++ "/" ++
-                                     (if exS then "S" else "_") ++ "/" ++
-                                     (if exO then "O" else "_")
+                      -- debugWrite $  (show n) ++ " Punters | "
+                      --            ++ (show lSs) ++ " Sites | "
+                      --            ++ (show lRs) ++ " Rivers"
+                      debugWrite ("strict graph Punter" ++ (show p) ++ " {")
+                      
+                      debugWrite "  node [shape = doublecircle];"
+                      mapM (\m -> (debugWrite $ "    q" ++ (show m) ++ " [style=\"filled\", fillcolor=\"red\"];")) ms
+
+                      debugWrite "  node [shape = cirlce];"
+                      mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
+
                       protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
-                      debugWrite $ "Your are Punter #" ++ (show p) ++ "\n"
 
          let doOwnMove s =
                  do (sm, s) <- runStateT nextMove s
-                    debugWrite $ "Me: " ++ (drop 3 $ show sm)
+                    debugWrite $ "    " ++ (show (M.TmpShow (remaining s ) sm))
                     protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
                     return s
 
@@ -70,7 +71,7 @@ main
          let doMove l =
                  do let (M.Move lastMoves s) = ((read l) :: M.Move)
                         p = ownid $ s
-                    debugWrite $ "Server: " ++ (show ((read l) :: M.Move))
+                    debugWrite $ (show ((read l) :: M.Move))
                     (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                     let remainingMoves = remaining
@@ -79,7 +80,7 @@ main
                     return ()
 
          let doStop l =
-                 do debugWrite $ "Server: " ++ (show ((read l) :: M.Move))
+                 do debugWrite $ (show ((read l) :: M.Move))
                     return ()
 
 
