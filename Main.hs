@@ -56,14 +56,13 @@ main
                       debugWrite "  node [shape = doublecircle];"
                       mapM (\m -> (debugWrite $ "    q" ++ (show m) ++ " [style=\"filled\", fillcolor=\"red\"];")) ms
 
-                      debugWrite "  node [shape = cirlce];"
+                      debugWrite "  node [shape = circle];"
                       mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
 
                       protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
 
          let doOwnMove s =
                  do (sm, s) <- runStateT nextMove s
-                    debugWrite $ "    " ++ (show (M.TmpShow (remaining s ) sm))
                     protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
                     return s
 

@@ -56,7 +56,7 @@ instance Show Move where
 
     show (Stop sms scs)
         = (foldr (\n r -> "    " ++ (show (TmpShow 0 n)) ++ "\n" ++ r) "" sms)
-          ++ "}\n"
+          ++ "}"
 
 instance Read (Move) where
     readsPrec p s = case parse pMove "" s of
