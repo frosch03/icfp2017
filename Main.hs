@@ -21,7 +21,7 @@ import Game
 
 
 serverAddress = "frosch03.de"
-player = Name "frosch03"
+player = Name "develop"
 
 
 main :: IO ()

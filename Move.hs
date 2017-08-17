@@ -135,9 +135,9 @@ pMove
          try ( do char '{'
                   string "\"stop\":"
                   char '{'
-                  sms <- pSimpleMoves
-                  char ','
                   scs <- pScores
+                  char ','
+                  sms <- pSimpleMoves
                   char '}'
                   char ','
                   string "\"state\":"
@@ -166,6 +166,8 @@ pScore
                   p <- pPunter
                   char ','
                   s <- pQuotedInt "score"
+                  char ','
+                  _ <- pQuotedString "name"
                   char '}'
                   return (S.Score p s)
              )

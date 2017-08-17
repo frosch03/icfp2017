@@ -40,6 +40,14 @@ pQuotedStrings s
          char ']'
          return $ xs
            
+pQuotedString :: String -> GenParser Char st String
+pQuotedString s
+    = do string $ "\"" ++ s ++ "\":"
+         char '\"'
+         xs  <- many1 $ noneOf "\""
+         char '\"'
+         return $ xs
+           
 pQuotedInts :: String -> GenParser Char st [Int]
 pQuotedInts s
     = do string $ "\"" ++ s ++ "\":"
