@@ -20,7 +20,7 @@ import Protocol
 import Game
 
 
-serverAddress = "punter.inf.ed.ac.uk"
+serverAddress = "frosch03.de"
 player = Name "frosch03"
 
 

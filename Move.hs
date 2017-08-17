@@ -98,7 +98,7 @@ instance Show TmpShow where
         = "q" ++ (show s) ++ "--q" ++ (show t) ++
           " [ color = \"" ++ colors!!p ++
           "\", penwidth = \"3\", label = \"" ++ (show p) ++ ", " ++
-                                              (show i) ++ "\" ];"
+                                              (show (i - p)) ++ "\" ];"
 
     show (TmpShow i (Pass p))
         = ""
@@ -110,7 +110,7 @@ instance Show TmpShow where
         = "q" ++ (show s) ++ "--q" ++ (show t) ++
           " [ color = \"" ++ (colors!!p) ++
           "\", penwidth = \"2\", label = \"" ++ (show p) ++ ", " ++
-                                              (show i) ++ "\" ];"
+                                              (show (i - p)) ++ "\" ];"
 
 
              
