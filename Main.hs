@@ -35,6 +35,7 @@ main
          _ <- protoRead
 
          l <- protoRead
+         debugWrite(l)
 
          let doReady l
                  = do let s   = initialize l
@@ -51,13 +52,13 @@ main
                       -- debugWrite $  (show n) ++ " Punters | "
                       --            ++ (show lSs) ++ " Sites | "
                       --            ++ (show lRs) ++ " Rivers"
-                      debugWrite ("strict graph Punter" ++ (show p) ++ " {")
+                      -- debugWrite ("strict graph Punter" ++ (show p) ++ " {")
                       
-                      debugWrite "  node [shape = doublecircle];"
-                      mapM (\m -> (debugWrite $ "    q" ++ (show m) ++ " [style=\"filled\", fillcolor=\"red\"];")) ms
+                      -- debugWrite "  node [shape = doublecircle];"
+                      -- mapM (\m -> (debugWrite $ "    q" ++ (show m) ++ " [style=\"filled\", fillcolor=\"red\"];")) ms
 
-                      debugWrite "  node [shape = circle];"
-                      mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
+                      -- debugWrite "  node [shape = circle];"
+                      -- mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
 
                       protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
 
@@ -70,7 +71,7 @@ main
          let doMove l =
                  do let (M.Move lastMoves s) = ((read l) :: M.Move)
                         p = ownid $ s
-                    debugWrite $ (show ((read l) :: M.Move))
+                    -- debugWrite $ (show ((read l) :: M.Move))
                     (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
                     let remainingMoves = remaining
@@ -79,7 +80,7 @@ main
                     return ()
 
          let doStop l =
-                 do debugWrite $ (show ((read l) :: M.Move))
+                 do -- debugWrite $ (show ((read l) :: M.Move))
                     return ()
 
 
