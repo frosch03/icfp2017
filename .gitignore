@@ -1,2 +1,8 @@
 /.#punter.hs
 /.projectile
+/test
+*.log
+/run
+/TAGS
+/submission/*
+

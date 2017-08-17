@@ -10,6 +10,7 @@ import Control.Monad.State
 import Network
 import System.IO
 import System.Environment
+import qualified Data.Text as T
 
 import qualified Move as M
 import Map 
@@ -22,50 +23,69 @@ import Game
 serverAddress = "punter.inf.ed.ac.uk"
 player = Name "frosch03"
 
+
 main :: IO ()
 main
-    = do args <- getArgs
-         let port = (read . head $ args) :: PortNumber
+    = do hSetBuffering stdin  NoBuffering
+         hSetBuffering stdout NoBuffering
+         hSetBuffering stderr NoBuffering
 
-         putStrLn $ "Connecting to: " ++ serverAddress ++ (':' : show port) ++ "\n"
-                  
-         h <- connectTo serverAddress (PortNumber port)
-         hPutStr h (pickle . lowcase . encodeJSON $ player)
-         _ <- hGetLine h
+         protoWrite (pickle . lowcase . encodeJSON $ player)
 
-         l <- hGetLine h >>= (\x -> return $ unpickle x)
-         putStrLn ("GameState received")
+         _ <- protoRead
 
-         let s   = initialize l
-             p   = punter  . setup $ s
-             n   = punters . setup $ s
-             lSs = length . sites  . map . setup $ s
-             lRs = length . rivers . map . setup $ s
-             lMs = length . mines  . map . setup $ s
+         l <- protoRead
 
-         putStrLn $      (show n)   ++ " Punters | "
-                      ++ (show lSs) ++ " Sites | "
-                      ++ (show lRs) ++ " Rivers | "
-                      ++ (show lMs) ++ " Mines "
-         hPutStr h (pickle . lowcase . encodeJSON $ Ready p)
-         putStrLn $ "Your are Punter #" ++ (show p) ++ "\n"
+         let doReady l
+                 = do let s   = initialize l
+                          set = settings $ ((read l) :: Setup)
+                          p   = ownid $ s
+                          n   = pcount $ s
+                          lSs = length . sites  . gamemap $ s
+                          lRs = length . rivers . gamemap $ s
+                          ms  = mines  . gamemap $ s
+                          exS = splurges $ set
+                          exF = futures  $ set
+                          exO = options  $ set
+
+                      -- debugWrite $  (show n) ++ " Punters | "
+                      --            ++ (show lSs) ++ " Sites | "
+                      --            ++ (show lRs) ++ " Rivers"
+                      debugWrite ("strict graph Punter" ++ (show p) ++ " {")
+                      
+                      debugWrite "  node [shape = doublecircle];"
+                      mapM (\m -> (debugWrite $ "    q" ++ (show m) ++ " [style=\"filled\", fillcolor=\"red\"];")) ms
+
+                      debugWrite "  node [shape = circle];"
+                      mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
+
+                      protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
 
          let doOwnMove s =
-               do (m, s) <- runStateT nextMove s
-                  putStrLn $ "Me:     " ++ show m
-                  hPutStr h (pickle . lowcase . encodeJSON $ m)
-                  return s
+                 do (sm, s) <- runStateT nextMove s
+                    protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
+                    return s
 
-         let loop s = 
-               do l <- hGetLine h >>= (\x -> return $ unpickle x)
-                  let lastServerMove = ((decodeJSON . rightcase $ l) :: M.Move)
-                      lastMoves      = M.moves lastServerMove
-                  putStrLn $ "Server: " ++ show lastServerMove
-                  (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
-                  let remainingMoves = remaining s
+         let doMove l =
+                 do let (M.Move lastMoves s) = ((read l) :: M.Move)
+                        p = ownid $ s
+                    debugWrite $ (show ((read l) :: M.Move))
+                    (m, s) <- runStateT (foldM (\_ n -> eliminateMove n) (M.Pass p) lastMoves) s
 
+                    let remainingMoves = remaining
                   
-                  when (not(M.isStopped lastServerMove)) (doOwnMove s >>= (\x -> loop x))
-         loop s
+                    doOwnMove s
+                    return ()
+
+         let doStop l =
+                 do debugWrite $ (show ((read l) :: M.Move))
+                    return ()
+
+
+         (case (tail . takeWhile (/= ':') $ l) of
+            "\"punter\"" -> doReady l
+            "\"move\""   -> doMove l
+            "\"stop\""   -> doStop l)
+
          return ()
