@@ -35,7 +35,7 @@ main
          _ <- protoRead
 
          l <- protoRead
-         debugWrite(l)
+         debugWrite l
 
          let doReady l
                  = do let s   = initialize l
@@ -60,11 +60,15 @@ main
                       -- debugWrite "  node [shape = circle];"
                       -- mapM (\(Site id) -> debugWrite $ "    q" ++ (show id) ++ " [pos=\"0,0\"];") (sites . gamemap $ s)
 
-                      protoWrite (pickle . lowcase . encodeJSON $ Ready p s)
+                          l' = (lowcase . encodeJSON $ Ready p s)
+                      debugWrite l'
+                      protoWrite . pickle $ l'
 
          let doOwnMove s =
                  do (sm, s) <- runStateT nextMove s
-                    protoWrite (pickle . lowcase . reparenMove . encodeJSON $ (sm, s))
+                    let l' = (lowcase . reparenMove . encodeJSON $ (sm, s))
+                    debugWrite l'
+                    protoWrite . pickle $ l'
                     return s
 
 
